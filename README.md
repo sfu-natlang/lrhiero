@@ -11,6 +11,8 @@ python decoder_cp.py --config <lrhiero.ini> --inputfile <test.in> --outputfile <
 
 # Requirements
 * Python 2.6 or higher
+* SRILM For building language model (LM)
+* KenLM Library for querying the language model (a Python wrapper is included with the decoder and the source for the wrapper will be released soon)
 
 # Advance Features of the Decoder
 
@@ -41,9 +43,10 @@ Switch -verbose (short -v) displays additional run time information.
 If you use this decoder in you research, consider citing:
 * Efficient Left-to-Right Hierarchical Phrase-based Translation with Improved Reordering. Maryam Siahbani, Baskaran Sankaran and Anoop Sarkar. In Proceedings of the Conference on Empirical Methods in Natural Language Processing (EMNLP 2013). Oct 18-21, 2013. Seattle, USA.
 
-
 # Contacts
+
 Maryam Siahbani, Anoop Sarkar
+
 {msiahban,anoop}@sfu.ca
 
 NatLang Lab, School of Computing Science
