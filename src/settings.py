@@ -9,7 +9,7 @@ import time
 class Features(object):
     '''Configuration parameters for different models''' 
 
-    __slots__ = "lm", "wp", "tm", "glue", "d", "dg", "r", "w", "h"
+    __slots__ = "lm", "wp", "tm", "glue", "d", "dg", "r", "w", "h", "lrm"
 
 
 def args():
@@ -31,6 +31,7 @@ def args():
     optparser.add_option("", "--outputfile", dest="outFile", type="string", help="Output file")
     optparser.add_option("", "--glue-file", dest="glueFile", type="string", help="Glue rules file")
     optparser.add_option("", "--ttable-file", dest="ruleFile", type="string", help="SCFG rules file")
+    optparser.add_option("", "--lrm-file", dest="lrmFile", type="string", help="phrase file for LRM information")
     optparser.add_option("", "--lmodel-file", dest="lmFile", type="string", help="LM file")
     optparser.add_option("", "--use-srilm", dest="use_srilm", default=False, action="store_true", help="Flag for using SRILM")
     optparser.add_option("", "--no-lm-score", dest="no_lm_score", default=False, action="store_true", help="Don't compute lm score")
@@ -77,7 +78,6 @@ def args():
     optparser.add_option("", "--ng", dest="n_gram_size", default=5, type="int", help="n-gram size")
 
     optparser.add_option("", "--future-cost", dest="future_cost", default=0, type="int", help="type of future cost computation")
-    optparser.add_option("", "--hyp-sign", dest="hyp_sign", default=0, type="int", help="type of signature used for hypotheses")
     optparser.add_option("", "--glue-type", dest="glue_type", default=0, type="int", help="type of glue rules")
     
     optparser.add_option("-v", "--verbose", dest="debug_level", type=int, default=0, help="verbose level")
@@ -127,7 +127,6 @@ def args():
     sys.stderr.write( "INFO: Cube pruning diversity     : %d\n" % (opts.cbp_diversity) )
     if opts.cbp_heap_diversity >0 :    sys.stderr.write( "INFO: Cube pruning heap diversity: %d\n" % (opts.cbp_heap_diversity) )
     if opts.future_cost >0 :    sys.stderr.write( "INFO: Future cost computation    : %d\n" % (opts.future_cost) )
-    if opts.hyp_sign >0 :     sys.stderr.write( "INFO: hypotheses signature       : %d\n" % (opts.hyp_sign) )
     if opts.glue_type >0 :     sys.stderr.write( "INFO: glue rule type       : %d\n" % (opts.glue_type) )
 
     sys.stderr.write( "INFO: Force decoding status      : %s\n" % (opts.force_decode) )
@@ -147,6 +146,12 @@ def args():
     else:
         feat.tm = [opts.weight_tmf, opts.weight_tmr, opts.weight_lwf, \
                     opts.weight_lwr, opts.weight_pp]
+    if opts.weight_lrm:
+        feat.lrm = map( lambda x: float(x), opts.weight_lrm.split(' ') )
+    elif opts.lrm_weight_cnt > 0:
+        feat.lrm = [ 0.2 for i in range(opts.lrm_weight_cnt) ]
+    else:
+        feat.lrm = None
     feat.wp = opts.weight_wp
     additionalFeat = [0.0, 0.0, 0.0, 0.0, 0.0]
     feat.d = opts.weight_d 
@@ -158,6 +163,10 @@ def args():
     
     if len( feat.tm ) != int(opts.tm_weight_cnt):
         sys.stderr.write( "ERROR: # of TM features doesn't match with TM weights count! Exiting\n" )
+        sys.exit(0)
+
+    if feat.lrm and len( feat.lrm ) != opts.lrm_weight_cnt:
+        sys.stderr.write( "ERROR: # of LRM features doesn't match with LRM weights count! Exiting\n" )
         sys.exit(0)
 
     # Set the nbest_format to 'False' & nbest_limit to '1', if one_best option is set
@@ -219,6 +228,7 @@ def loadConfig():
     global opts
     parameter_line = ''
     tmLst = []
+    lrmLst = []
     line_cnt = 0
     cF = open(opts.configFile, 'r')
     for line in cF:
@@ -246,7 +256,6 @@ def loadConfig():
                 elif feat == "cbp-diversity": opts.cbp_diversity = int(val)
                 elif feat == "cbp-heap-diversity": opts.cbp_heap_diversity = int(val)
                 elif feat == "future-cost": opts.future_cost = int(val)
-                elif feat == "hyp-sign": opts.hyp_sign = int(val)
                 elif feat == "glue-type": opts.glue_type = int(val)
                 elif feat == "shallow-order": opts.sh_order = int(val)
                 else:
@@ -270,6 +279,11 @@ def loadConfig():
                 opts.tm_weight_cnt = int( opts.tm_weight_cnt )
                 # do not override ruleFile if it is specified in cmd line
                 if not opts.ruleFile: opts.ruleFile = ttable_file
+            elif parameter_line == "[distortion-file]":
+                opts.lrm_weight_cnt, lrmtable_file = line.split(' ')
+                opts.lrm_weight_cnt = int( opts.lrm_weight_cnt )
+                # do not override reorderingFile if it is specified in cmd line
+                if not opts.lrmFile: opts.lrmFile = lrmtable_file
             elif parameter_line == "[weight_d]": opts.weight_d = float(line)
             elif parameter_line == "[weight_r]": opts.weight_r = float(line)
             elif parameter_line == "[weight_dg]": opts.weight_dg = float(line)
@@ -286,7 +300,8 @@ def loadConfig():
                 if not opts.lmFile: opts.lmFile = lm_file
             elif parameter_line == "[weight_wp]": opts.weight_wp = float( line )
             elif parameter_line == "[weight_glue]": opts.weight_glue = float( line )
-            elif parameter_line == "[weight_lm]": opts.weight_lm = float( line )
+            elif parameter_line == "[weight_lm]":
+                opts.weight_lm = float( line )
             elif parameter_line == "[n-best-list]":
                 if line.find("=") <= 0:
                     if line.isdigit():
@@ -310,10 +325,14 @@ def loadConfig():
                     elif feat == "one-best" or feat == "one_best": opts.one_best = False
             elif parameter_line == "[weight_tm]":
                 tmLst.append( line )
+            elif parameter_line == "[weight_lrm]":
+                lrmLst.append( line )
 
     cF.close()
     if tmLst:
         opts.weight_tm = ' '.join( tmLst )
+    if lrmLst:
+        opts.weight_lrm = ' '.join( lrmLst )
 
 def copyModels():
     """ Copies the model files to the local path.
