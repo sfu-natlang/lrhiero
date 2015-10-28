@@ -76,13 +76,13 @@ def decode_CP(sent_indx, lattice_obj):
 	#print "stack:\t", p_s, " has ", cube_indx, ' cubes and ', len(chart[p_s].table), " groups"
 
     #print "sent len:  ", self.sent_len, "\t\tavg cubes:  %1.3g\t\tavg groups:  %1.3g" % ((total_cubes*1.0)/self.sent_len, (total_groups*1.0)/self.sent_len )
+    chart[p_s].printNBest(None, sent_indx)       # Print the N-best derivations in the last cell
     if len(chart[p_s]) == 0:
 	if settings.opts.force_decode: sys.stderr.write("           INFO  :: Force decode mode: No matching candidate found.")
 	else:  sys.stderr.write("           INFO  :: Error in Decoding: No matching candidate found.")
 	return 0
-    chart[p_s].printNBest(None, sent_indx)       # Print the N-best derivations in the last cell
     if settings.opts.trace_rules > 0:
-        chart[p_s].printTrace(self.sent)        # Prints the translation trace for the top-3 entries
+        chart[p_s].printTrace(lattice_obj.sent)        # Prints the translation trace for the top-3 entries
     return 1
 
 def readNParse(sent_count):
