@@ -9,7 +9,7 @@ import time
 class Features(object):
     '''Configuration parameters for different models''' 
 
-    __slots__ = "lm", "wp", "tm", "glue", "d", "dg", "r", "w", "h", "lrm"
+    __slots__ = "lm", "wp", "tm", "glue", "d", "dg", "r", "w", "h", "rm"
 
 
 def args():
@@ -29,9 +29,10 @@ def args():
     optparser.add_option("", "--forcesent", dest="forceSent", type="string", help="target output sentence")
     optparser.add_option("", "--inputfile", dest="inFile", type="string", help="Input data file")
     optparser.add_option("", "--outputfile", dest="outFile", type="string", help="Output file")
+    optparser.add_option("", "--segfile", dest="segFile", type="string", help="Input segment file")
     optparser.add_option("", "--glue-file", dest="glueFile", type="string", help="Glue rules file")
     optparser.add_option("", "--ttable-file", dest="ruleFile", type="string", help="SCFG rules file")
-    optparser.add_option("", "--lrm-file", dest="lrmFile", type="string", help="phrase file for LRM information")
+    optparser.add_option("", "--rm-file", dest="rmFile", type="string", help="phrase file for Lexicalized Reordering Model information")
     optparser.add_option("", "--lmodel-file", dest="lmFile", type="string", help="LM file")
     optparser.add_option("", "--use-srilm", dest="use_srilm", default=False, action="store_true", help="Flag for using SRILM")
     optparser.add_option("", "--no-lm-score", dest="no_lm_score", default=False, action="store_true", help="Don't compute lm score")
@@ -42,6 +43,7 @@ def args():
     optparser.add_option("", "--tm-wgt-cnt", dest="tm_weight_cnt", default=5, type="int", help="# of TM weights")
 
     optparser.add_option("", "--trace-rules", dest="trace_rules", default=0, type="int", help="Trace the rules used in the k-best candidates as specified")
+    optparser.add_option("", "--inc-decode", dest="inc_decode", default=False, action="store_true", help="Run the decoder in incremental decoding mode")
     optparser.add_option("", "--force-decode", dest="force_decode", default=False, action="store_true", help="Run the decoder in force decode mode")
     optparser.add_option("", "--reffile", dest="refFile", type="string", help="Reference file or prefix for multiple refs (for force decoding)")
     optparser.add_option("", "--tmg-wgt-cnt", dest="tmg_weight_cnt", default=4, type="int", help="# of TM weights for glue rules")
@@ -56,6 +58,8 @@ def args():
     optparser.add_option("", "--dl", dest="beam-threshold", default=100, type="int", help="beam size for threshold pruning")
     optparser.add_option("", "--lm", dest="weight_lm", default=1.0, type="float", help="Language model weight")
     optparser.add_option("", "--tm", dest="weight_tm", type="string", help="Translation model weights as a string")
+    optparser.add_option("", "--rm", dest="weight_rm", type="string", help="Reordering model weights as a string")
+    optparser.add_option("", "--def-rm", dest="default_rm", type="string", help="Default values for reordering features as a string")
     optparser.add_option("", "--tmf", dest="weight_tmf", default=1.0, type="float", help="Forward trans model weight")
     optparser.add_option("", "--tmr", dest="weight_tmr", default=1.0, type="float", help="Reverse trans model weight")
     optparser.add_option("", "--lwf", dest="weight_lwf", default=0.5, type="float", help="Forward lexical trans weight")
@@ -146,14 +150,24 @@ def args():
     else:
         feat.tm = [opts.weight_tmf, opts.weight_tmr, opts.weight_lwf, \
                     opts.weight_lwr, opts.weight_pp]
-    if opts.weight_lrm:
-        feat.lrm = map( lambda x: float(x), opts.weight_lrm.split(' ') )
-    elif opts.lrm_weight_cnt > 0:
-        feat.lrm = [ 0.2 for i in range(opts.lrm_weight_cnt) ]
+    if opts.weight_rm:
+        feat.rm = map( lambda x: float(x), opts.weight_rm.split(' ') )
+        opts.rm_weight_cnt = len(feat.rm)
+    elif opts.rm_weight_cnt > 0:
+        feat.rm = [ 0.2 for i in range(opts.rm_weight_cnt) ]
     else:
-        feat.lrm = None
+        opts.rm_weight_cnt = 0
+        feat.rm = None
+
+    if opts.default_rm:
+        opts.default_rm = map( lambda x: float(x), opts.default_rm.split(' ') )
+        opts.default_rm = [opts.default_rm[:3], opts.default_rm[3:]]
+    else:
+        opts.default_rm = [(-1.5, -2.2, -0.3), (-1.5, -2.2, -0.3)]
+
     feat.wp = opts.weight_wp
-    additionalFeat = [0.0, 0.0, 0.0, 0.0, 0.0]
+    additionalFeat = [0.0, 0.0, 0.0, 0.0, 0.0, \
+                      0.0, 0.0, 0.0, 0.0, 0.0, 0.0]      # lexicalized reordering model
     feat.d = opts.weight_d 
     feat.dg = opts.weight_dg 
     feat.r = opts.weight_r 
@@ -165,8 +179,8 @@ def args():
         sys.stderr.write( "ERROR: # of TM features doesn't match with TM weights count! Exiting\n" )
         sys.exit(0)
 
-    if feat.lrm and len( feat.lrm ) != opts.lrm_weight_cnt:
-        sys.stderr.write( "ERROR: # of LRM features doesn't match with LRM weights count! Exiting\n" )
+    if feat.rm and len( feat.rm ) != opts.rm_weight_cnt:
+        sys.stderr.write( "ERROR: # of RM features doesn't match with RM weights count! Exiting\n" )
         sys.exit(0)
 
     # Set the nbest_format to 'False' & nbest_limit to '1', if one_best option is set
@@ -228,8 +242,10 @@ def loadConfig():
     global opts
     parameter_line = ''
     tmLst = []
-    lrmLst = []
+    rmLst = []
+    rmDefLst = []
     line_cnt = 0
+    opts.rm_weight_cnt = 0
     cF = open(opts.configFile, 'r')
     for line in cF:
         line = line.strip()
@@ -273,6 +289,7 @@ def loadConfig():
             elif parameter_line == "[sentperfile]": opts.sent_per_file = int(line)
             elif parameter_line == "[inputfile]": opts.inFile = line
             elif parameter_line == "[outputfile]": opts.outFile = line
+            elif parameter_line == "[segfile]": opts.segFile = line
             elif parameter_line == "[glue-file]" and not opts.glueFile: opts.glueFile = line
             elif parameter_line == "[ttable-file]":
                 opts.tm_weight_cnt, ttable_file = line.split(' ')
@@ -280,10 +297,10 @@ def loadConfig():
                 # do not override ruleFile if it is specified in cmd line
                 if not opts.ruleFile: opts.ruleFile = ttable_file
             elif parameter_line == "[distortion-file]":
-                opts.lrm_weight_cnt, lrmtable_file = line.split(' ')
-                opts.lrm_weight_cnt = int( opts.lrm_weight_cnt )
+                opts.rm_weight_cnt, rmtable_file = line.split(' ')
+                opts.rm_weight_cnt = int( opts.rm_weight_cnt )
                 # do not override reorderingFile if it is specified in cmd line
-                if not opts.lrmFile: opts.lrmFile = lrmtable_file
+                if not opts.rmFile: opts.rmFile = rmtable_file
             elif parameter_line == "[weight_d]": opts.weight_d = float(line)
             elif parameter_line == "[weight_r]": opts.weight_r = float(line)
             elif parameter_line == "[weight_dg]": opts.weight_dg = float(line)
@@ -325,14 +342,18 @@ def loadConfig():
                     elif feat == "one-best" or feat == "one_best": opts.one_best = False
             elif parameter_line == "[weight_tm]":
                 tmLst.append( line )
-            elif parameter_line == "[weight_lrm]":
-                lrmLst.append( line )
+            elif parameter_line == "[weight_rm]":
+                rmLst.append( line )
+            elif parameter_line == "[lrm-default]":
+                rmDefLst.append( line )
 
     cF.close()
     if tmLst:
         opts.weight_tm = ' '.join( tmLst )
-    if lrmLst:
-        opts.weight_lrm = ' '.join( lrmLst )
+    if rmLst:
+        opts.weight_rm = ' '.join( rmLst )
+    if rmDefLst:
+        opts.default_rm = ' '.join( rmDefLst )
 
 def copyModels():
     """ Copies the model files to the local path.

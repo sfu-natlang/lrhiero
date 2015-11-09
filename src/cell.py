@@ -150,7 +150,7 @@ class Cell(object):
             if nbest_cnt == settings.opts.trace_rules: break
         tF.close()
 
-    def printNBest(self, cell_type, sent_indx):
+    def printNBest(self, cell_type, sent_indx, isEndSent=True, history="<s>"):
         '''Print the N-best list for the goal symbol'''
 
         nbest_cnt = 0
@@ -179,7 +179,10 @@ class Cell(object):
 
         for entry in entriesLst:
             if not settings.opts.nbest_format:
-                oF.write( "%s\n" % Entry.getHypothesis(entry) )
+                if isEndSent:
+                    oF.write( "%s\n" % Entry.getHypothesis(entry) )
+                else:
+                    oF.write( "%s " % Entry.getHypothesis(entry) )
             else:
                 (cand, feat_str, cand_score) = Entry.printEntry(entry)
                 oF.write( "%d||| %s ||| %s ||| %f\n" % ( sent_indx, cand, feat_str, cand_score ) )
@@ -193,6 +196,11 @@ class Cell(object):
             if nbest_cnt == nbest_2_produce: break  # stop after producing required no of items
         oF.close()
 
+    def getHistory(self):
+	self.sortAllCand()
+	entry = self.fullTable[0]
+	return entry.tgt_elided
+    
     def addAllCands(self, entryLst):
 	for entry in entryLst:
 	    self.fullTable.append(entry)
@@ -206,6 +214,9 @@ class Cell(object):
 	self.fullTable.sort(key=operator.attrgetter("cand_score"), reverse=True)
 	self.sent_scored = True
 
+    def getBest(self):
+	return self.fullTable[0]
+    
     def groupCands(self):
 	if not self.sent_scored:
 	    self.sortAllCand()

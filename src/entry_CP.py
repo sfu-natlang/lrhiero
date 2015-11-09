@@ -60,16 +60,26 @@ class Entry(object):
         '''Returns the back-pointer of the current hypothesis'''
         return self.bp
 
-    def getHypothesis(self):
+    def getHypothesis(self, history="<s>"):
         '''Remove the beginning and end sentence markers in the translation'''
 
-        if self.tgt.startswith("<s>") and self.tgt.endswith("</s>"):
-            return self.tgt[4:-5]
-        elif self.tgt.startswith("<s>") and not self.tgt.endswith("</s>"):
-            return self.tgt[4:]
-        elif not self.tgt.startswith("<s>") and self.tgt.endswith("</s>"):
-            return self.tgt[:-5]
-        else: return self.tgt
+	tgt = self.tgt
+	if history != "<s>":
+	    if self.tgt.startswith(history):
+		tgt = self.tgt[len(history):].strip()
+	    else:
+		print "Error2, history does not match"
+		print history
+		print self.tgt
+		print tgt		
+		exit(1)
+        if tgt.startswith("<s>") and tgt.endswith("</s>"):
+            return tgt[4:-5]
+        elif tgt.startswith("<s>") and not tgt.endswith("</s>"):
+            return tgt[4:]
+        elif not tgt.startswith("<s>") and tgt.endswith("</s>"):
+            return tgt[:-5]
+        else: return tgt
 
     def printEntry(self):
         '''Prints the specific elements of the result'''
@@ -132,7 +142,7 @@ class Entry(object):
 			self.featVec[2] * settings.feat.tm[2] + self.featVec[3] * settings.feat.tm[3]
 	return self.tm4_score + self.lm_heu
 	#return self.score - (wvec_wp * self.featVec[5]) + self.lm_heu
-	    
+
     def getLMHeu(self):
         return self.lm_heu
 
@@ -159,8 +169,7 @@ class Entry(object):
         print "Bpointer        :", self.bp[0]
         print "Parent rule     :", self.bp[1]
 	unc_span_str = ",".join([str(t) for t in self.unc_spans])
-        print "uncovered spans :", unc_span_str
-	
+        print "uncovered spans :", unc_span_str	
 
-def getInitHyp(sent_len):
-	return Entry(0, "<s>",[0 for i in settings.opts.U_lpTup[2]], "<s>", defaultSign(sent_len)) 
+def getInitHyp(sent_len, history='<s>'):
+	return Entry(0, history, [0 for i in settings.opts.U_lpTup[2]], history, defaultSign(sent_len)) 
