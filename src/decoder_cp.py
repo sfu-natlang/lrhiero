@@ -9,6 +9,7 @@ import settings
 from cell import Cell
 from lattice import Lattice
 from entry_CP import getInitHyp
+from rule import getInitRule
 from lazyMerge_CP import Lazy
 from phraseTable import PhraseTable
 from lmKENLM import KENLangModel
@@ -25,7 +26,7 @@ def decode_CP(sent_indx, lattice_obj):
     p_i = 0
     ## log
     #print "\nFilling stack:", p_i
-    chart[0].flush2Cell([getInitHyp(lattice_obj.sent_len)])     # Flush the entries to the cell
+    chart[0].flush2Cell([getInitHyp(lattice_obj.sent_len, getInitRule())])     # Flush the entries to the cell
     ## log print hypotheses in this stack
 
     # Phase-2: Filling the stacks

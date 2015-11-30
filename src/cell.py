@@ -131,13 +131,11 @@ class Cell(object):
 
             while ( hypTraceStack ):
                 trace_entry = hypTraceStack.pop(0)
-                try:
-                    bp = Entry.getBP(trace_entry)
-                    hypTraceStack.insert(0, bp[0])
-                    tF.write("partial hyp:  %s\n" %(Entry.printPartialHyp(trace_entry)))
-                    tF.write("rule:         %s\n" % ( str(Entry.getInfRule(trace_entry)[0])))
-                except:
-                    pass
+                bp = Entry.getBP(trace_entry)
+                if bp is None: break
+                hypTraceStack.insert(0, bp[0])
+                tF.write("partial hyp:  %s\n" %(Entry.printPartialHyp(trace_entry)))
+                tF.write("rule:         %s\n" % ( str(Entry.getInfRule(trace_entry)[0])))
 
             tF.write("TRACE_END\n")
             nbest_cnt += 1

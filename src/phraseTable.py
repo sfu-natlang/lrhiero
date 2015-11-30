@@ -100,8 +100,8 @@ class PhraseTable(object):
                         if(self.ttl > 0 and tgt_options >= self.ttl): break
                     del entriesLst[:]
 
-                #entriesLst.append( PTableItem(featVec[2], Rule(0.0, 0.0, src, tgt, featVec)) )
-                entriesLst.append( PTableItem(featVec[0], Rule(0.0, 0.0, src, tgt, featVec)) )
+                entriesLst.append( PTableItem(featVec[2], Rule(0.0, 0.0, src, tgt, featVec)) )
+                #entriesLst.append( PTableItem(featVec[0], Rule(0.0, 0.0, src, tgt, featVec)) )
                 prev_src = src
 
             # Handle the last rule
