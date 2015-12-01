@@ -44,7 +44,7 @@ class RefPhrases(object):
         refToks = sent.split()
         sent_len = len(refToks)
 
-        if not RefPhrases.sentPhrasesDoD.has_key(sent_i):
+        if not sent_i in RefPhrases.sentPhrasesDoD:
             RefPhrases.sentPhrasesDoD[sent_i] = {}
             RefPhrases.startPhrasesDoD[sent_i] = {}
 
@@ -53,14 +53,14 @@ class RefPhrases(object):
                 ref_phr = ' '.join( refToks[ref_j:ref_k] )
 
                 # Add phrases directly to the dict
-                if RefPhrases.phrasesDict.has_key(ref_phr):
+                if ref_phr in RefPhrases.phrasesDict:
                     RefPhrases.phrasesDict[ref_phr] += 1
                 else:
                     RefPhrases.phrasesDict[ref_phr] = 1
                     RefPhrases.tot_ref_phrases += 1
 
                 # Add phrases to the dict indexed by the sent id
-                if not RefPhrases.sentPhrasesDoD[sent_i].has_key(ref_phr):
+                if not ref_phr in RefPhrases.sentPhrasesDoD[sent_i]:
                     RefPhrases.sentPhrasesDoD[sent_i][ref_phr] = 1
                 # Add starting phrases to a dict indexed by the sent id
                 if ref_j == 0:
@@ -69,26 +69,26 @@ class RefPhrases(object):
 
     @classmethod
     def isValidRefPhr(cls, ref_phr):
-        return cls.phrasesDict.has_key(ref_phr)
+        return (ref_phr in cls.phrasesDict)
 
     @classmethod
     def isValidRefPhrNSent(cls, sent_id, ref_phr):
-        if not cls.sentPhrasesDoD.has_key(sent_id):
+        if not sent_id in cls.sentPhrasesDoD:
             sys.stderr.write("Invalid sent_id %d provided. Exiting!!\n" % (sent_id))
             sys.exit(1)
 
-        return cls.sentPhrasesDoD[sent_id].has_key(ref_phr)
+        return (ref_phr in cls.sentPhrasesDoD[sent_id])
 
     @classmethod
     def isValidRefPhrStart(cls, sent_id, ref_phr):
-        if not cls.startPhrasesDoD.has_key(sent_id):
+        if not sent_id in cls.startPhrasesDoD:
                 sys.stderr.write("Invalid sent_id %d provided. Exiting!!\n" % (sent_id))
                 sys.exit(1)
-        return cls.startPhrasesDoD[sent_id].has_key(ref_phr)
+        return (ref_phr in cls.startPhrasesDoD[sent_id])
 
     @classmethod
     def isValidRefSent(cls, sent_id, ref_phr):
-            if not cls.refDict.has_key(sent_id):
+            if not sent_id in cls.refDict:
                 sys.stderr.write("Invalid sent_id %d provided. Exiting!!\n" % (sent_id))
                 sys.exit(1)
             for ref_sent in cls.refDict[sent_id]: 

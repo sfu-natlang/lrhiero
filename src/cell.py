@@ -26,7 +26,7 @@ class Cell(object):
     def add2Cell(self, key, entryLst):
         '''Adds the derived entries along with the key in the corresponding cell of the table'''
 
-        if not self.table.has_key(key): self.table[key] = []
+        if not key in self.table: self.table[key] = []
         for entry in entryLst:
             self.table[key].append( entry )
 	    entry.scoreCandidate()
@@ -99,7 +99,7 @@ class Cell(object):
                     rule = Entry.getInfRule(trace_entry)[0]
                     hypTraceStack.insert(0, back_pointer)
                     rule = rule.src + " ||| " + rule.tgt
-                    if ( rulesUsedDict.has_key(rule) ): rulesUsedDict[rule] += 1
+                    if rule in rulesUsedDict : rulesUsedDict[rule] += 1
                     else: rulesUsedDict[rule] = 1
                 except:
                     pass

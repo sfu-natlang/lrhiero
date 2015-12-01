@@ -163,10 +163,10 @@ class Lazy(object):
         return NbestLst
 
     def recordDiversity(self, cube_indx, dscnt_cube_indx=-1):
-        if self.coverageDict.has_key(cube_indx): self.coverageDict[cube_indx] += 1
+        if cube_indx in self.coverageDict: self.coverageDict[cube_indx] += 1
         else: self.coverageDict[cube_indx] = 1
 
-        if dscnt_cube_indx >= 0 and self.coverageDict.has_key(dscnt_cube_indx):
+        if dscnt_cube_indx >= 0 and dscnt_cube_indx in self.coverageDict:
             self.coverageDict[dscnt_cube_indx] -= 1
 
     def getItemIndxInHeap(self, item_indx):
@@ -187,7 +187,7 @@ class Lazy(object):
     def indexHypothesis(cls, hyp, curr_hyp_score, heap_indx):
         '''Index target hypotheses with their respective nbest-list index'''
 
-        if cls.hypScoreDict.has_key(hyp):
+        if hyp in cls.hypScoreDict:
             (existing_indx, best_hyp_score) = cls.hypScoreDict[hyp]
             if curr_hyp_score > best_hyp_score:
                 cls.hypScoreDict[hyp] = (existing_indx, curr_hyp_score)
@@ -202,7 +202,7 @@ class Lazy(object):
     def checkHypothesis(cls, hyp):
         '''Check if an existing hypothesis has the same target as the current one'''
 
-        if cls.hypScoreDict.has_key(hyp):
+        if hyp in cls.hypScoreDict:
             return cls.hypScoreDict[hyp][0]
         else:
             return None
@@ -214,7 +214,7 @@ class Lazy(object):
         # Only the best hypothesis for any target sequence needs to be stored, if use_unique_nbest is True
         # In the absence of accurate LM score, the score excluding the LM score is used to decide the best hyp
         # All the identical hypotheses will all have same LM score and so this approach is correct
-        if cls.hypScoreDict.has_key(hyp):
+        if hyp in cls.hypScoreDict:
             if cls.hypScoreDict[hyp][1] >= curr_hyp_score:
                 return 0                                       # existing hyp is better or not different; return 0 to ignore this
             else:
@@ -316,7 +316,7 @@ class Cube(object):
         '''Explore the neighbouring cells of the given index-vector'''
 
         neighbours = []
-        if not self.trackCubeDict.has_key( tuple(r) ):
+        if not tuple(r) in self.trackCubeDict:
             print "Error: The indexVctor %s doesn't *exist* in self.trackCubeDict" % (tuple(r))
         elif self.trackCubeDict[tuple(r)] != 1 and self.cbp_heap_diversity > 1 :
             return neighbours
@@ -338,7 +338,7 @@ class Cube(object):
                 dim += 1
 
             r1 = r[:]     # deep copy the vector 'r'
-            if not self.trackCubeDict.has_key( tuple(r1) ):
+            if not tuple(r1) in self.trackCubeDict:
                 self.trackCubeDict[ tuple(r1) ] = 1
 
                 (score, entry_obj) = self.mergeEntries(entryLst, cube_indx)
@@ -349,7 +349,7 @@ class Cube(object):
         # The set of new {r1} now form the open frontier, i.e. cells whose neighbours are yet to be explored
         # The cell r can be closed as its neighbours has been completely explored
         # The open and closed frontiers are indicated by values 1 and 0 respectively in the self.trackCubeDict
-        if not self.trackCubeDict.has_key( tuple(r) ):
+        if not tuple(r) in self.trackCubeDict:
             print "Error: The indexVctor %s doesn't *exist* in self.trackCubeDict" % (tuple(r))
         elif self.trackCubeDict[tuple(r)] != 1:
             print "Error: The value of indexVctor %s in self.trackCubeDict is %d (should be 1 instead)" % (tuple(r), self.trackCubeDict[tuple(r)])
@@ -366,7 +366,7 @@ class Cube(object):
             for bound in self.boundLst:
                 indexVector[1] = bound
                 r = tuple(indexVector)
-                if not self.trackCubeDict.has_key( r ):
+                if not r in self.trackCubeDict:
                     div_candTup = self.getItemForVect(cube_indx, indexVector)
                     if div_candTup[0] < bestScore: bestScore= div_candTup[0]
                     neighbours.append(div_candTup)
@@ -397,7 +397,7 @@ class Cube(object):
     def getItemForVect(self, cube_indx, r):
         '''Get the item corresponding to vector r in the Cube and return its derivation'''
 
-        if self.trackCubeDict.has_key( tuple(r) ):
+        if tuple(r) in self.trackCubeDict:
             return (0, None, cube_indx, r)
         entryLst = self.initDimVec[:]
 

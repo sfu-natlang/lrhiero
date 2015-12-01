@@ -194,7 +194,7 @@ def consolidateRules(cntsFile):
         for line in rC:
             (src, tgt, cnts) = line.split(" ||| ")
             rule = src + " ||| " + tgt
-            if ( rulesUsedDict.has_key(rule) ): rulesUsedDict[rule] += int(cnts)
+            if rule in rulesUsedDict : rulesUsedDict[rule] += int(cnts)
             else: rulesUsedDict[rule] = int(cnts)
     finally:
         rC.close()

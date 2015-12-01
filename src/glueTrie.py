@@ -113,7 +113,7 @@ class SuffixTreeNode(object):
         ptr = 0
         while True:
             new_label = wLst[ptr]
-            if curr_node.__childIndxDict.has_key(new_label):
+            if new_label in curr_node.__childIndxDict:
                 child_node = curr_node.__childIndxDict[new_label]
                 ptr += 1
                 curr_node = child_node
@@ -182,18 +182,18 @@ class SuffixTreeNode(object):
             else: prev_match = 0
 
             # a non-terminal X__1 or X__2 is found in the current node
-            if search_label != "$$$" and (curr_node.__childIndxDict.has_key("X__1") or curr_node.__childIndxDict.has_key("X__2") or curr_node.__childIndxDict.has_key("X__3") or curr_node.__childIndxDict.has_key("X__4")):   #TO-DO: it may have more than 4 non-terminal
+            if search_label != "$$$" and (("X__1" in curr_node.__childIndxDict) or ("X__2" in curr_node.__childIndxDict) or ("X__3" in curr_node.__childIndxDict) or ("X__4" in curr_node.__childIndxDict)):   #TODO: it may have more than 4 non-terminal
 
                 # a nonterminal is the child of the current node
                 spanIndxLst = sIndxLst[:]
                 if curr_label[0:3] == 'X__': spanIndxLst.append( search_indx - 1)
                 spanIndxLst.append( search_indx )
                 for child in ["X__1", "X__2", "X__3", "X__4"]:
-                    if not curr_node.__childIndxDict.has_key(child): continue	#TO-DO: it may have more than 4 non-terminal
+                    if not child in  curr_node.__childIndxDict: continue	#TO-DO: it may have more than 4 non-terminal
                     self.__processNewNode( curr_node.__childIndxDict[child], search_indx + 1, patt_len, spanIndxLst )
 
             # the word at the current position is found in the Trie
-            if curr_node.__childIndxDict.has_key(search_label):
+            if search_label in  curr_node.__childIndxDict:
                 spanIndxLst = sIndxLst[:]
                 if prev_match > 0:
                     spanIndxLst.append( search_indx - 1 )
@@ -233,7 +233,7 @@ class SuffixTreeNode(object):
         return True
 
     def isEndofSuffix(self):
-        if self.__childIndxDict.has_key("$$$"):
+        if "$$$" in self.__childIndxDict:
             return True
         return False
 
