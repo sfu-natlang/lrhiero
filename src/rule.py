@@ -139,3 +139,12 @@ class Distortion():
         for i,s in enumerate(spans):
             d += s*self.xDict[i+1]
         return self.dist + d
+
+
+def getInitRule():
+    startSymbol = Rule(0.0, 0.0, "<s>", "<s>", [])
+    return startSymbol
+
+def getEndRule():
+    endSymbol = Rule(0.0, 0.0, "<\s>", "<\s>", [])
+    return endSymbol

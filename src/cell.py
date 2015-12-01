@@ -76,9 +76,8 @@ class Cell(object):
 
         while ( hypTraceStack ):
             trace_entry = hypTraceStack.pop(0)
-            for back_pointer in Entry.getBP(trace_entry):
-                hypTraceStack.insert(0, back_pointer)
-            inf_entry = Entry.getInfEntry(trace_entry)
+            hypTraceStack.insert(0, Entry.getBP(trace_entry))
+            #inf_entry = Entry.getInfEntry(trace_entry)
             bp_trace += (Entry.getInfCell(trace_entry),)
 
         return bp_trace
@@ -95,19 +94,15 @@ class Cell(object):
             hypTraceStack.append(entry)
             while ( hypTraceStack ):
                 trace_entry = hypTraceStack.pop(0)
-                for back_pointer in Entry.getBP(trace_entry):
+                try:
+                    back_pointer = Entry.getBP(trace_entry)
+                    rule = Entry.getInfRule(trace_entry)[0]
                     hypTraceStack.insert(0, back_pointer)
-                inf_entry = Entry.getInfEntry(trace_entry)
-                if inf_entry is not None:
-                    src = Entry.getSrc(inf_entry)
-                    tgt = Entry.getHypothesis(inf_entry)
-                else:
-                    src = Entry.getSrc(trace_entry)
-                    tgt = Entry.getHypothesis(trace_entry)
-
-                rule = src + " ||| " + tgt
-                if ( rulesUsedDict.has_key(rule) ): rulesUsedDict[rule] += 1
-                else: rulesUsedDict[rule] = 1
+                    rule = rule.src + " ||| " + rule.tgt
+                    if ( rulesUsedDict.has_key(rule) ): rulesUsedDict[rule] += 1
+                    else: rulesUsedDict[rule] = 1
+                except:
+                    pass
             cand_cnt += 1
             del hypTraceStack[:]
             if cand_cnt >= settings.opts.trace_rules: break
@@ -136,13 +131,11 @@ class Cell(object):
 
             while ( hypTraceStack ):
                 trace_entry = hypTraceStack.pop(0)
-                for back_pointer in Entry.getBP(trace_entry):
-                    hypTraceStack.insert(0, back_pointer)
-                inf_entry = Entry.getInfEntry(trace_entry)
-                if inf_entry is not None:   # partial hypotheses
-		    tF.write("partial hyp:\t%s\n" %(Entry.printPartialHyp(trace_entry)))
-                else:                       # rules
-                    tF.write( "rule:\t\t%s ||| %s\n" % ( Entry.getSrc(trace_entry),Entry.printPartialHyp(trace_entry)) )
+                bp = Entry.getBP(trace_entry)
+                if bp is None: break
+                hypTraceStack.insert(0, bp[0])
+                tF.write("partial hyp:  %s\n" %(Entry.printPartialHyp(trace_entry)))
+                tF.write("rule:         %s\n" % ( str(Entry.getInfRule(trace_entry)[0])))
 
             tF.write("TRACE_END\n")
             nbest_cnt += 1
@@ -180,9 +173,9 @@ class Cell(object):
         for entry in entriesLst:
             if not settings.opts.nbest_format:
                 if isEndSent:
-                    oF.write( "%s\n" % Entry.getHypothesis(entry) )
+                    oF.write( "%s\n" % Entry.getHypothesis(entry, history) )
                 else:
-                    oF.write( "%s " % Entry.getHypothesis(entry) )
+                    oF.write( "%s " % Entry.getHypothesis(entry, history) )
             else:
                 (cand, feat_str, cand_score) = Entry.printEntry(entry)
                 oF.write( "%d||| %s ||| %s ||| %f\n" % ( sent_indx, cand, feat_str, cand_score ) )

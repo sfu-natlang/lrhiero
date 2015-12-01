@@ -9,23 +9,24 @@ import settings
 from cell import Cell
 from lattice import Lattice
 from entry_CP import getInitHyp
+from rule import getInitRule
 from lazyMerge_CP import Lazy
 from phraseTable import PhraseTable
 from lmKENLM import KENLangModel
 from lmSRILM import SRILangModel
 from refPhrases import RefPhrases
 
-def decode_CP(sent_indx, lattice_obj):
+def decode_CP(sent_indx, lattice_obj, history='<s>', isEndSent=True):
     ''' augmented stack decoder (cube pruning)'''
 
     final_cell = False
     # Phase-1: Initialization
     chart = [Cell() for i in range(lattice_obj.sent_len+1)]
-    # Fill the initial stack (or chartDict) with null hypothesis 
+    # Fill the initial stack (or chart) with null hypothesis 
     p_i = 0
     ## log
     #print "\nFilling stack:", p_i
-    chart[0].flush2Cell([getInitHyp(lattice_obj.sent_len)])     # Flush the entries to the cell
+    chart[0].flush2Cell([getInitHyp(lattice_obj.sent_len, getInitRule(), history)])     # Flush the entries to the cell
     ## log print hypotheses in this stack
 
     # Phase-2: Filling the stacks
@@ -35,12 +36,12 @@ def decode_CP(sent_indx, lattice_obj):
     for p_s in range(1, lattice_obj.sent_len+1):
 	## log
 	#print "\nFilling stack:", p_s
-	if ( p_s == lattice_obj.sent_len ):
-	    final_cell = True
-	cube_indx = 0
+        if (settings.opts.inc_decode and isEndSent and p_s == lattice_obj.sent_len) or (not settings.opts.inc_decode and p_s == lattice_obj.sent_len ):
+            final_cell = True
+        cube_indx = 0
 	merge_obj = Lazy(sent_indx, p_s, final_cell)
-	for p_j in range(max(0, p_s - settings.opts.fr_rule_terms), p_s):
-	    p_l = p_s - p_j
+        for p_j in range(max(0, p_s - settings.opts.fr_rule_terms), p_s):
+            p_l = p_s - p_j
 	    ## log
 	    #print "\nFilling stack:", p_s, "\tSpan length:", p_l
 	    for group_sign in chart[p_j].table:
@@ -76,18 +77,20 @@ def decode_CP(sent_indx, lattice_obj):
 	#print "stack:\t", p_s, " has ", cube_indx, ' cubes and ', len(chart[p_s].table), " groups"
 
     #print "sent len:  ", self.sent_len, "\t\tavg cubes:  %1.3g\t\tavg groups:  %1.3g" % ((total_cubes*1.0)/self.sent_len, (total_groups*1.0)/self.sent_len )
+    chart[p_s].printNBest(None, sent_indx, isEndSent, history)       # Print the N-best derivations in the last cell
     if len(chart[p_s]) == 0:
-	if settings.opts.force_decode: sys.stderr.write("           INFO  :: Force decode mode: No matching candidate found.")
-	else:  sys.stderr.write("           INFO  :: Error in Decoding: No matching candidate found.")
-	return 0
-    chart[p_s].printNBest(None, sent_indx)       # Print the N-best derivations in the last cell
+        if settings.opts.force_decode: sys.stderr.write("           INFO  :: Force decode mode: No matching candidate found.")
+        else:  sys.stderr.write("           INFO  :: Error in Decoding: No matching candidate found.")
+        return 0
     if settings.opts.trace_rules > 0:
-        chart[p_s].printTrace(self.sent)        # Prints the translation trace for the top-3 entries
+        chart[p_s].printTrace(lattice_obj.sent)        # Prints the translation trace for the top-3 entries
+    if settings.opts.inc_decode:
+        return chart[p_s].getHistory()
     return 1
 
 def readNParse(sent_count):
     '''Parse the sentences in the array'''
-
+    global segmentDict
     sent_indx = 0
     coverage_cnt = 0
     relaxed_decoding = False
@@ -104,18 +107,39 @@ def readNParse(sent_count):
             sent_count += 1
             continue
 
-        parse_begin = time.time()
-        lattice_obj = Lattice(sent_count, sent, relaxed_decoding)
         sys.stderr.write( "%3d Translating  :: %s\n" % (sent_count, sent) )
-        dec_status = decode_CP(sent_count, lattice_obj)
-        parse_time = time.time() - parse_begin
+        if settings.opts.inc_decode:
+            #incDecoding(sent_count, sent, relaxed_decoding, refsLst)
+            wordsLst = sent.split()
+            sent_len = len(wordsLst)
+            pre_ind = 0
+            history = '<s>'
+            total_time = 0
+            endSent = False
+            for i in range(sent_len):
+                if i == sent_len -1: endSent = True
+                if i in segmentDict[sent_count]:
+                    seg_span = " ".join(wordsLst[pre_ind:i+1])
+                    parse_begin = time.time()
+                    lattice_obj = Lattice(sent_count, seg_span, relaxed_decoding)
+                    history = decode_CP(sent_count, lattice_obj, history, endSent)
+                    parse_time = time.time() - parse_begin
+                    total_time += parse_time
+                    pre_ind = i+1
+                    Lattice.clear()
+            parse_time = total_time
+        else:
+            parse_begin = time.time()
+            lattice_obj = Lattice(sent_count, sent, relaxed_decoding)
+            dec_status = decode_CP(sent_count, lattice_obj)
+            parse_time = time.time() - parse_begin
+            Lattice.clear()
 
         tot_time += parse_time
         sys.stderr.write( "Translation time :: %1.3g sec\n\n" % (parse_time) )
         sent_count += 1
         sent_indx += 1
         if settings.opts.force_decode: coverage_cnt += dec_status
-	Lattice.clear()
 
     inF.close()
     sys.stderr.write( "Time taken for decoding the set      : %1.3g sec\n\n" % (tot_time) )
@@ -185,10 +209,25 @@ def consolidateRules(cntsFile):
         wC.write( "%s ||| %d\n" % (rule, r_cnt) )
     wC.close()
 
+def readSegments(segFile):
+    inF = open(segFile, "r")
+    global segmentDict
+    segmentDict = []
+    for line in inF:
+        segmentDict.append({})
+        for i,w in enumerate(line.strip().split()):
+            if w == '1': segmentDict[-1][i] = 1
+        segmentDict[-1][len(line.strip().split())-1] = 1
+    inF.close
+
 def main():
 
     global refFiles
     sent_count = settings.opts.sentindex * settings.opts.sent_per_file
+
+    if settings.opts.inc_decode:
+        sys.stderr.write( "Loading segmentation file %s ... \n" % (settings.opts.segFile) )
+        readSegments(settings.opts.segFile)
 
     sys.stderr.write( "Loading LM file %s ... \n" % (settings.opts.lmFile) )
     t_beg = time.time()

@@ -472,7 +472,7 @@ class Cube(object):
 	    entry_obj = None
 	    score += sign.future_cost
 	else:
-            entry_obj = Entry(score, cons_item.tgt, fVec, e_tgt, sign, self.depth_hier, (), entriesLst[1], entriesLst[:], 0.0, out_state)
+            entry_obj = Entry(score, cons_item.tgt, fVec, e_tgt, sign, self.depth_hier, (), (entriesLst[1], None), entriesLst[:], 0.0, out_state)
             score = entry_obj.score + entry_obj.getFutureScore()
         return (score, entry_obj)
 

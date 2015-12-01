@@ -41,11 +41,9 @@ class Lattice(object):
     def clear():
 	'''Clear the static data-structures'''
 	del Lattice.fc_table
-	for sp in Lattice.spanToRuleDict.itervalues():
-	    sp = ''
+	for sp in Lattice.spanToRuleDict.itervalues():       sp = ''
 	del Lattice.spanToRuleDict
-	for sp in Lattice.ruleLookUpTable.itervalues():
-	    sp = ''
+	for sp in Lattice.ruleLookUpTable.itervalues():	     sp = ''
 	del Lattice.ruleLookUpTable
 	Lattice.this = None	
 	
@@ -180,9 +178,7 @@ class Lattice(object):
 	    if abs(i-j) <= settings.opts.max_phr_len: matchLst += PhraseTable.findConsistentRules(span_phrase)
 
             for match in matchLst:
-		#if len(match[1])%2 != 0:
-		#    print "Err in getRuleSpans", match[0], match[1]
-		#    exit(1)		
+		assert (len(match[1])%2 == 0) , "Error in getRuleSpans\n rule: %s, spans: %s" %( match[0], ' '.join(map(lambda x: str(x), match[1])) )
                 spans = []
                 rule = match[0]
 		if rule in Lattice.spanToRuleDict[(i,j)]: continue
