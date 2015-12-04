@@ -1,7 +1,7 @@
 lrhiero
 ========
 
-This is a left-to-right decoder for hierarchical phrase-based (hiero) SMT system.
+This is the decoder of left-to-right hierarchical phrase-based (lrhiero) SMT system.
 
 
 # Usage
@@ -26,6 +26,13 @@ The content of rule file is for each line: source phrase, target phrase, and fea
 aber X__1 sagen X__2 ||| but say X__1 X__2 ||| -0.558224 -0.000100005 -1.14023 -1.84913
 ```
 
+## Incremental Decoding
+LR-Hiero decoder can produce the transaltion incrementally given the input sentence word by word. The decoder needs a segmenter which indicates where it is safe for the decoder to emit the translation. In current version, the decoder gets the segmentation inofrmation in a file in parallel to the input sentence.
+
+```
+python decoder_cp.py --config <lrhiero.ini> --inputfile <test.in> --outputfile <test.out> --ttable-file <test.rule> --inc-decode --segfile <test.seg> 
+```
+
 ## Handling Unknown Words
 Unknown words are copied verbatim to the output. For each unknown word/phrase 4 glue rules are generated and added to the grammar, therefore they may be placed out of order in the output. Unknown words are also scored by the language model. 
 
@@ -42,6 +49,8 @@ Switch -verbose (short -v) displays additional run time information.
 # Citation
 If you use this decoder in you research, consider citing:
 * Efficient Left-to-Right Hierarchical Phrase-based Translation with Improved Reordering. Maryam Siahbani, Baskaran Sankaran and Anoop Sarkar. In Proceedings of the Conference on Empirical Methods in Natural Language Processing (EMNLP 2013). Oct 18-21, 2013. Seattle, USA.
+* Incremental Translation using a Hierarchical Phrase-based Translation System. Maryam Siahbani, Ramtin M. Seraj, Baskaran Sankaran and Anoop Sarkar. In Proceedings of the 2014 IEEE Spoken Language Technology Workshop (SLT 2014). December 7-10, 2014. Nevada, USA.
+
 
 # Contacts
 
