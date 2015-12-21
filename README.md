@@ -9,7 +9,7 @@ This is the decoder of left-to-right hierarchical phrase-based (lrhiero) SMT sys
 python decoder_cp.py --config <lrhiero.ini> --inputfile <test.in> --outputfile <test.out> --ttable-file <test.rule> --1b
 ```
 
-Use the ```--help``` or ```-h``` to see other options.
+Use ```--help``` or ```-h``` to see other options.
 
 # Requirements
 * Python 2.6 or higher
