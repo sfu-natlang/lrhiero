@@ -6,8 +6,10 @@ This is the decoder of left-to-right hierarchical phrase-based (lrhiero) SMT sys
 
 # Usage
 ```
-python decoder_cp.py --config <lrhiero.ini> --inputfile <test.in> --outputfile <test.out> --ttable-file <test.rule>
+python decoder_cp.py --config <lrhiero.ini> --inputfile <test.in> --outputfile <test.out> --ttable-file <test.rule> --1b
 ```
+
+Use the ```--help``` or ```-h``` to see other options.
 
 # Requirements
 * Python 2.6 or higher
@@ -30,8 +32,10 @@ aber X__1 sagen X__2 ||| but say X__1 X__2 ||| -0.558224 -0.000100005 -1.14023 -
 LR-Hiero decoder can produce the transaltion incrementally given the input sentence word by word. The decoder needs a segmenter which indicates where it is safe for the decoder to emit the translation. In current version, the decoder gets the segmentation inofrmation in a file in parallel to the input sentence.
 
 ```
-python decoder_cp.py --config <lrhiero.ini> --inputfile <test.in> --outputfile <test.out> --ttable-file <test.rule> --inc-decode --segfile <test.seg> 
+python decoder_cp.py --config <lrhiero.ini> --inputfile <test.in> --outputfile <test.out> --ttable-file <test.rule> --inc-decode --segfile <test.seg> --1b
 ```
+
+NOTE: the incremental is just used for test phase (not generating n-best list for tuning phase).
 
 ## Handling Unknown Words
 Unknown words are copied verbatim to the output. For each unknown word/phrase 4 glue rules are generated and added to the grammar, therefore they may be placed out of order in the output. Unknown words are also scored by the language model. 
