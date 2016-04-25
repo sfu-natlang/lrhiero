@@ -26,7 +26,7 @@ def decode_CP(sent_indx, lattice_obj, history='<s>', isEndSent=True):
     p_i = 0
     ## log
     #print "\nFilling stack:", p_i
-    chart[0].flush2Cell([getInitHyp(lattice_obj.sent_len, getInitRule(), history)])     # Flush the entries to the cell
+    chart[0].flush2Cell([getInitHyp(lattice_obj.sent_len, getInitRule(), history)], lattice_obj.puncLst)     # Flush the entries to the cell
     ## log print hypotheses in this stack
 
     # Phase-2: Filling the stacks
@@ -63,7 +63,7 @@ def decode_CP(sent_indx, lattice_obj, history='<s>', isEndSent=True):
 
 	total_cubes += cube_indx
 	tgtLst = Lazy.mergeProducts(merge_obj)
-	chart[p_s].flush2Cell(tgtLst)   # Flush the entries to the cell
+	chart[p_s].flush2Cell(tgtLst, lattice_obj.puncLst)   # Flush the entries to the cell
 	merge_obj = ''  # Important: This clears the mem-obj and calls the garbage collector on Lazy()
 	total_groups += len(chart[p_s].table)
 	

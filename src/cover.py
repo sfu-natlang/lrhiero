@@ -22,7 +22,7 @@ class Cover(object):
 	self.future_cost = other.future_cost
 	self._ranges = other._ranges
 		
-    def __init__(self, ss, first_span):
+    def __init__(self, ss, first_span, fc=None):
 	if (tuple(ss), first_span) in Cover.repos:
 	    self.copyfrom(Cover.repos[(tuple(ss), tuple(first_span))])
 
@@ -34,7 +34,7 @@ class Cover(object):
 	    self.hashval = hash((tuple(ss), tuple(self.first_span)))
 	    #uncov = self.uncovered_ranges()
 	    #self.future_cost = Lattice.this.getFutureCost(uncov)
-	    self.future_cost = None
+	    self.future_cost = None if fc is None else fc
 	    Cover.repos[(tuple(ss), tuple(first_span))] = self
 
     def uncovered_ranges(self, straight=True):
@@ -93,12 +93,12 @@ class Cover(object):
 	    self._ranges = res
 	return self._ranges
 
-    def advance(self, new_spans):
+    def advance(self, new_spans, fc=None):
 	new_set = set(range(self.first_span[0],self.first_span[1]))
 	for span in new_spans:
 	    new_set-=set(range(span[0], span[1]))
 	first_span = () if not len(new_spans) else new_spans[0]
-	c = Cover(self.cover_set | new_set, first_span)
+	c = Cover(self.cover_set | new_set, first_span, fc)
 	return c
     
     def getFutureCost(self, uncov=None):

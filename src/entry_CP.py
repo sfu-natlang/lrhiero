@@ -33,14 +33,30 @@ class Entry(object):
         other.tgt = self.tgt
 	other.tgt_elided = self.tgt_elided
         other.featVec = self.featVec[:]
+        other.sign = self.sign
         other.depth_hier = self.depth_hier
-        other.inf_entry = None
         other.bp = ()
         other.cand_score = 0.0
         other.lm_right = self.lm_right
 
         return other
 
+    def expandByPunc(self, puncLst):
+        if len(self.sign.uncovered_spans) == 0: return None
+        for index in puncLst:   ## make sure that the phrase at least have length 2
+            if index >= self.sign.uncovered_spans[0][1]-2: return None
+            if index <= self.sign.uncovered_spans[0][0]+1: continue   
+            break
+        if index <= self.sign.uncovered_spans[0][0]+1: return None
+        print "in expandByPunc!!!    ", index, self.sign.uncovered_spans[0]
+        other = Entry(0, '', [], '')
+        other = self.copyEntry(other)
+        new_unc_span = [(self.sign.uncovered_spans[0][0], index+1), (index+1, self.sign.uncovered_spans[0][1])]
+        new_cover = self.sign.cover.advance(new_unc_span, self.sign.future_cost)
+        other.sign = self.sign.advance(new_cover, new_unc_span, self.tgt_elided)
+
+        return other
+ 
     def setInfCell(self, span):
         self.inf_cell = span
 

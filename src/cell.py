@@ -332,9 +332,23 @@ class Cell(object):
 
 	return self.table.get(key, [])
     
-    def flush2Cell(self, tgtLst):
+    def flush2Cell(self, entryLst, puncLst=None):
 	'''Sort, group and flush the entries (candidate hypotheses) to the cell'''
 	
-	self.addAllCands(tgtLst)
+	#self.addAllCands(entryLst)
+        #In a separate pass, we should check hypothises to apply punctuation marks as glue rules.
+        if settings.opts.punc_glue and puncLst != None:
+            for entry in entryLst:
+                new_entry = Entry.expandByPunc(entry, puncLst)
+                self.fullTable.append(entry)
+                if new_entry!=None: 
+                    self.fullTable.append(new_entry)
+                    #print "old hyp: %s" %(Entry.printPartialHyp(entry))
+                    #print "new hyp: %s" %(Entry.printPartialHyp(new_entry))
+        else:
+            for entry in entryLst:
+	        self.fullTable.append(entry)
+	#self.sent_scored = True
+	self.sent_scored = False
 	self.sortAllCand()
 	self.groupCands()

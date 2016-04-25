@@ -6,6 +6,7 @@ import settings
 from phraseTable import PhraseTable
 
 INF = 100000000
+PUNC = {".":0, ",":0, ":":0, "?":0, "!":0, ";":0}
 
 class Lattice(object):
     '''(phrase/rule)-lattice, 2D table. (not to be confused with search chart)'''
@@ -15,27 +16,27 @@ class Lattice(object):
     ruleLookUpTable = {}
     this = None
     
-    #__slots__ = "sent_indx", "sent", "wordsLst", "sent_len", "sh_order", "relaxed_decoding", "wordSpans", "fc_type"
+    #__slots__ = "sent_indx", "sent", "wordsLst", "sent_len", "sh_order", "wordSpans", "fc_type"
 
-    def __init__(self, sent_indx, p_sent, relaxed=False):
+    def __init__(self, sent_indx, p_sent):
 	Lattice.this = self
         Lattice.spanToRuleDict = {}
         Lattice.ruleLookUpTable = {}
         Lattice.fc_table = {}
         self.sent_indx = sent_indx
         self.sent = p_sent
-        self.relaxed_decoding = relaxed
         self.wordsLst = p_sent.split()
         self.sent_len = len( self.wordsLst )
         self.sh_order = settings.opts.sh_order
         self.fc_type = settings.opts.future_cost
-        if (self.relaxed_decoding):
-            sys.stderr.write("INFO: Relaxing to full Hiero decoding for sentence# %d as Shallow-%d decoding failed." % (sent_indx, self.sh_order))
         self.wordSpans = {}
         for i in range(self.sent_len):
             for j in range(i+1,self.sent_len+1):
                 self.wordSpans[(i,j)] = " ".join(self.wordsLst[i:j])
         self.compFutureCostTable()
+        self.puncLst = None
+        if settings.opts.punc_glue:    # use punctuation marks to create glue rules
+            self.__findPunc()
 	
     @staticmethod
     def clear():
@@ -52,6 +53,13 @@ class Lattice(object):
 
         del self.wordsLst[:]
         self.wordSpans.clear()
+
+    def __findPunc(self):
+        self.puncLst = []
+        for i,w in enumerate(self.wordsLst):
+            if w in PUNC:
+                self.puncLst.append(i)
+        if len(self.puncLst) == 0: self.puncLst = None
 
     def compFutureCostTable(self):
         """ compute future cost based on the tpy:
