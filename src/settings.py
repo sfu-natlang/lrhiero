@@ -83,6 +83,7 @@ def args():
 
     optparser.add_option("", "--future-cost", dest="future_cost", default=0, type="int", help="type of future cost computation")
     optparser.add_option("", "--glue-type", dest="glue_type", default=0, type="int", help="type of glue rules")
+    optparser.add_option("", "--punc-glue", dest="punc_glue", default=False, action="store_true", help="Punctuation marks can be used as glue rules")
     
     optparser.add_option("-v", "--verbose", dest="debug_level", type=int, default=0, help="verbose level")
     
@@ -108,7 +109,7 @@ def args():
         sys.exit(1)
     if opts.configFile is not None:
         loadConfig()
-
+    
     if opts.force_decode and not opts.refFile: 
         sys.stderr.write("ERROR: Forced decoding requires at least one reference file.\n")
         sys.stderr.write("       But, no reference file has been specified. Exiting!!\n\n")
@@ -119,22 +120,23 @@ def args():
         sys.stderr.write("      Setting no_lm_state to True and using SRILM\n")
         opts.no_lm_state = True
 
-    sys.stderr.write( "INFO: Using the N-gram size      : %d\n" % (opts.n_gram_size) )
-    sys.stderr.write( "INFO: Run decoder in 1NT mode    : %s\n" % (opts.one_nt_decode) )
-    sys.stderr.write( "INFO: Use X freely in Glue rules : %s\n" % (opts.free_glue) )
-    sys.stderr.write( "INFO: # of rule terms in Fr side : %d\n" % (opts.fr_rule_terms) )
-    sys.stderr.write( "INFO: Generating unique N-best   : %s\n" % (opts.use_unique_nbest) )
-    sys.stderr.write( "INFO: Computing LM score         : %s\n" % (not opts.no_lm_score) )
-    sys.stderr.write( "INFO: Use state info for KENLM   : %s\n" % (not opts.no_lm_state) )
-    sys.stderr.write( "INFO: Discount LM penalty 4 UNK  : %s\n" % (not opts.no_dscnt_UNKlm) )
-    sys.stderr.write( "INFO: Glue rules penalty applied : %s\n" % (not opts.no_glue_penalty) )
-    sys.stderr.write( "INFO: Cube pruning diversity     : %d\n" % (opts.cbp_diversity) )
-    if opts.cbp_heap_diversity >0 :    sys.stderr.write( "INFO: Cube pruning heap diversity: %d\n" % (opts.cbp_heap_diversity) )
-    if opts.future_cost >0 :    sys.stderr.write( "INFO: Future cost computation    : %d\n" % (opts.future_cost) )
-    if opts.glue_type >0 :     sys.stderr.write( "INFO: glue rule type       : %d\n" % (opts.glue_type) )
+    sys.stderr.write( "INFO: Using the N-gram size             : %d\n" % (opts.n_gram_size) )
+    sys.stderr.write( "INFO: Run decoder in 1NT mode           : %s\n" % (opts.one_nt_decode) )
+    sys.stderr.write( "INFO: Use X freely in Glue rules        : %s\n" % (opts.free_glue) )
+    sys.stderr.write( "INFO: Use punctuation marks as Glue     : %s\n" % (opts.punc_glue) )
+    sys.stderr.write( "INFO: # of rule terms in Fr side        : %d\n" % (opts.fr_rule_terms) )
+    sys.stderr.write( "INFO: Generating unique N-best          : %s\n" % (opts.use_unique_nbest) )
+    sys.stderr.write( "INFO: Computing LM score                : %s\n" % (not opts.no_lm_score) )
+    sys.stderr.write( "INFO: Use state info for KENLM          : %s\n" % (not opts.no_lm_state) )
+    sys.stderr.write( "INFO: Discount LM penalty 4 UNK         : %s\n" % (not opts.no_dscnt_UNKlm) )
+    sys.stderr.write( "INFO: Glue rules penalty applied        : %s\n" % (not opts.no_glue_penalty) )
+    sys.stderr.write( "INFO: Cube pruning diversity            : %d\n" % (opts.cbp_diversity) )
+    if opts.cbp_heap_diversity >0 :    sys.stderr.write( "INFO: Cube pruning heap diversity       : %d\n" % (opts.cbp_heap_diversity) )
+    if opts.future_cost >0 :   sys.stderr.write( "INFO: Future cost computation           : %d\n" % (opts.future_cost) )
+    if opts.glue_type >0 :     sys.stderr.write( "INFO: glue rule type                    : %d\n" % (opts.glue_type) )
 
-    sys.stderr.write( "INFO: Force decoding status      : %s\n" % (opts.force_decode) )
-    sys.stderr.write( "INFO: Reference file             : %s\n" % (opts.refFile) )
+    sys.stderr.write( "INFO: Force decoding status             : %s\n" % (opts.force_decode) )
+    sys.stderr.write( "INFO: Reference file                    : %s\n" % (opts.refFile) )
 
     if opts.nbest_extremum > 0:
         if opts.nbest_extremum * 2 >= opts.nbest_limit:
@@ -280,12 +282,14 @@ def loadConfig():
                         if feat == "shallow-hiero": opts.shallow_hiero = True
                         elif feat == "one-nt-decode": opts.one_nt_decode = True
                         elif feat == "free-glue": opts.free_glue = True
+                        elif feat == "punc-glue": opts.punc_glue = True
                         elif feat == "use-srilm": opts.use_srilm = True
                         elif feat == "no-glue-penalty": opts.no_glue_penalty = True
                         elif feat == "no-lm-score": opts.no_lm_score = True
                         elif feat == "no-dscnt-UNKlm": opts.no_dscnt_UNKlm = True
                     elif val == 'false':
                         if feat == "free-glue": opts.free_glue = False
+                        elif feat == "punc-glue": opts.punc_glue = False
             elif parameter_line == "[sentperfile]": opts.sent_per_file = int(line)
             elif parameter_line == "[inputfile]": opts.inFile = line
             elif parameter_line == "[outputfile]": opts.outFile = line
